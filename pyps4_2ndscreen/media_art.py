@@ -145,9 +145,15 @@ async def fetch(
         response = await session.get(url, params=params, timeout=3)
         if response.status != HTTP_STATUS_OK:
             content = await response.json()
-            _LOGGER.error("PS Store HTTP Error; Reason: %s", response.reason)
+            _LOGGER.error("PS Store HTTP Error; Reason: %s", response.cause)
             _LOGGER.debug("PS Store HTTP response: %s", content)
-            return None
+            # Fallback to US region and retry
+            response2 = await session.get(BASE_URL.format("us", "en", title_id), params=params, timeout=3)
+             if response2.status != HTTP_STATUS_OK:
+                content = await response2.json()
+                _LOGGER.error("PS Store HTTP Error; Reason: %s", response2.cause)
+                _LOGGER.debug("PS Store HTTP response: %s", content)
+                return None
         return response
     except (asyncio.TimeoutError, ContentTypeError, SSLError):
         return None
